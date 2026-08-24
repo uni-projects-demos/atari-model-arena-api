@@ -1,0 +1,56 @@
+[project]
+name = "atari-model-arena-api"
+version = "1.0.0"
+description = "Backend API for testing trained models against classic Atari game engines and, when supported, users."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "ale-py>=0.12.1",
+  "autorom[accept-rom-license]",
+  "fastapi>=0.141.1",
+  "huggingface-hub>=1.28.0",
+  "multi-agent-ale-py>=0.1.12",
+  "numpy>=2.5.2",
+  "opencv-python-headless>=4.10,<5",
+  "pettingzoo[atari]",
+  "python-multipart>=0.0.32",
+  "stable-baselines3>=2.9.0",
+  "torch>=2.13.0",
+  "uvicorn[standard]>=0.52.4",
+]
+
+[project.optional-dependencies]
+dev = [
+  "black>=26.5.1",
+  "mypy>=2.3.1",
+  "pytest>=9.1.1",
+  "ruff>=0.16.4",
+]
+
+[project.scripts]
+install-roms = "utils.setup_roms:main"
+code-check = "utils.code_check:main"
+
+[tool.mypy]
+check_untyped_defs = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = [
+  "multi_agent_ale_py",
+  "multi_agent_ale_py.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["api*", "utils*"]
+exclude = ["tests*"]
+namespaces = false
