@@ -3,7 +3,13 @@ from pathlib import Path
 from ...models import ModelSpec, RuntimePolicy
 from .. import CompatProfile
 from ..atari import SinglePlayerModelController
-from ..base import GAME_MODE_KEY, GamePlugin, MatchController, MatchMode
+from ..base import (
+    GAME_MODE_KEY,
+    USER_GAME_MODE_KEY,
+    GamePlugin,
+    MatchController,
+    MatchMode,
+)
 from ..register import register_game
 from .config import (
     BREAKOUT_ACTIONS,
@@ -66,8 +72,8 @@ class BreakoutPlugin(GamePlugin):
         return breakout_rom_candidates(base=base)
 
     def mode_status(self, mode_key: str) -> tuple[bool, str | None]:
-        if mode_key != GAME_MODE_KEY:
-            return False, "Breakout supports Model vs Game only."
+        if mode_key not in {GAME_MODE_KEY, USER_GAME_MODE_KEY}:
+            return False, "Breakout supports Model vs Game and User vs Game only."
         return breakout_status()
 
     def create_controller(
@@ -75,8 +81,9 @@ class BreakoutPlugin(GamePlugin):
         mode_key: str,
         profile_key: str,
         policy: RuntimePolicy,
+        opponent_policy: RuntimePolicy | None = None,
     ) -> MatchController:
-        if mode_key != GAME_MODE_KEY:
+        if mode_key not in {GAME_MODE_KEY, USER_GAME_MODE_KEY}:
             raise ValueError(f"Unknown Breakout match mode: {mode_key}")
 
         self.get_profile(key=profile_key)

@@ -22,6 +22,7 @@ class ModelSpec:
     n_actions: int = 6
     fb_type: str | None = None
     is_default: bool = False
+    is_default_model_ii: bool = False
     sb3_overrides: tuple[tuple[str, float | int], ...] = ()
 
 
@@ -41,9 +42,12 @@ class ModelEntry:
         return cls(spec=spec, game_key=game_key)
 
     def public(self) -> dict[str, Any]:
-        return {
+        public: dict[str, Any] = {
             "id": self.spec.id,
             "name": self.spec.name,
             "uploaded": self.spec.src == "uploaded",
             "default": self.spec.is_default,
         }
+        if self.spec.is_default_model_ii:
+            public["default_model_ii"] = True
+        return public

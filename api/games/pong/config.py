@@ -1,8 +1,12 @@
 from ..base import (
     GAME_MODE_KEY,
+    MODEL_MODE_KEY,
+    USER_GAME_MODE_KEY,
     USER_MODE_KEY,
+    USER_MODEL_MODE_KEY,
     CompatProfile,
     MatchMode,
+    PlayerSlot,
     UserControls,
     get_profile_key,
 )
@@ -57,13 +61,53 @@ PONG_MODES: dict[str, MatchMode] = {
         key=USER_MODE_KEY,
         left_label="MODEL",
         right_label="YOU",
+        players=(
+            PlayerSlot("second_0", "model", is_mirror=True, side="left"),
+            PlayerSlot("first_0", "human", side="right"),
+        ),
         is_user=True,
         user_controls=UserControls(
             move="↑/↓ or W/S",
             fire="SPACE",
         ),
     ),
-    GAME_MODE_KEY: MatchMode(key=GAME_MODE_KEY, left_label="GAME", right_label="MODEL"),
+    GAME_MODE_KEY: MatchMode(
+        key=GAME_MODE_KEY,
+        left_label="GAME",
+        right_label="MODEL",
+        players=(PlayerSlot("first_0", "model", side="right"),),
+    ),
+    MODEL_MODE_KEY: MatchMode(
+        key=MODEL_MODE_KEY,
+        left_label="MODEL",
+        right_label="MODEL",
+        players=(
+            PlayerSlot("second_0", "model", is_mirror=True, side="left"),
+            PlayerSlot("first_0", "model", side="right"),
+        ),
+    ),
+    USER_GAME_MODE_KEY: MatchMode(
+        key=USER_GAME_MODE_KEY,
+        left_label="GAME",
+        right_label="YOU",
+        is_user=True,
+        user_controls=UserControls(move="↑/↓ or W/S", fire="SPACE"),
+        players=(PlayerSlot("first_0", "human", side="right"),),
+    ),
+    USER_MODEL_MODE_KEY: MatchMode(
+        key=USER_MODEL_MODE_KEY,
+        left_label="YOU",
+        right_label="MODEL",
+        is_user=True,
+        user_controls=UserControls(
+            move="↑/↓ or W/S",
+            fire="SPACE",
+        ),
+        players=(
+            PlayerSlot("first_0", "human", side="left"),
+            PlayerSlot("second_0", "model", side="right"),
+        ),
+    ),
 }
 
 

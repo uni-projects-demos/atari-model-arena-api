@@ -1,4 +1,12 @@
-from ..base import GAME_MODE_KEY, CompatProfile, MatchMode, get_profile_key
+from ..base import (
+    GAME_MODE_KEY,
+    USER_GAME_MODE_KEY,
+    CompatProfile,
+    MatchMode,
+    PlayerSlot,
+    UserControls,
+    get_profile_key,
+)
 
 BREAKOUT_PROFILES: dict[str, CompatProfile] = {
     "breakout-noframeskip-v4": CompatProfile(
@@ -16,7 +24,20 @@ BREAKOUT_PROFILES: dict[str, CompatProfile] = {
 }
 
 BREAKOUT_MODES: dict[str, MatchMode] = {
-    GAME_MODE_KEY: MatchMode(key=GAME_MODE_KEY, left_label="GAME", right_label="MODEL"),
+    GAME_MODE_KEY: MatchMode(
+        key=GAME_MODE_KEY,
+        left_label="GAME",
+        right_label="MODEL",
+        players=(PlayerSlot("first_0", "model", side="right"),),
+    ),
+    USER_GAME_MODE_KEY: MatchMode(
+        key=USER_GAME_MODE_KEY,
+        left_label="GAME",
+        right_label="YOU",
+        is_user=True,
+        user_controls=UserControls(move="←/→ or A/D", fire="SPACE"),
+        players=(PlayerSlot("first_0", "human", side="right"),),
+    ),
 }
 
 BREAKOUT_ACTIONS: dict[int, str] = {

@@ -5,6 +5,7 @@ import numpy as np
 from ...models import RuntimePolicy
 from ..base import MatchController, MatchSnapshot
 from .ale import SinglePlayerALE
+from .user import UserPolicy
 
 
 class SinglePlayerModelController(MatchController):
@@ -22,6 +23,20 @@ class SinglePlayerModelController(MatchController):
         if self._obs is not None:
             return np.asarray(a=self._obs, dtype=np.uint8)
         return np.zeros(shape=(210, 160, 3), dtype=np.uint8)
+
+    def set_user(self, direction: str) -> None:
+        if isinstance(self._policy, UserPolicy):
+            self._policy.set_user(direction)
+
+    def _snapshot(self, is_done: bool = False) -> MatchSnapshot:
+        return MatchSnapshot(
+            self._frame(),
+            self._left_score,
+            self._right_score,
+            self._model_action,
+            is_done,
+            {"first_0": self._model_action},
+        )
 
     def step(self) -> MatchSnapshot:
         self._model_action: int = int(self._policy.predict(rgb=self._frame()))

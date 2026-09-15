@@ -15,7 +15,7 @@ from ..config import settings
 from ..games import DEFAULT_MODE_KEY, GamePlugin, get_game
 from ..policies import PolicyManager
 from ..services import get_policies
-from ..session import GameSession, SessionConfig
+from ..session import GameSession, SessionConfig, resolve_players
 
 logger: Logger = getLogger(name=__name__)
 router: APIRouter = APIRouter()
@@ -51,7 +51,7 @@ async def play(ws: WebSocket):
             req_msg=req_msg, policies=policies
         )
         if game_session:
-            await ws.send_json(data={"type": "started"})
+            await ws.send_json(data=game_session.started_metadata)
             await _stream_game_session(
                 ws=ws, game_session=game_session, policies=policies, fps=fps
             )
@@ -88,8 +88,19 @@ async def _create_game_session(
     if not is_available:
         raise RuntimeError(err or f"Mode '{mode}' is unavailable.")
 
-    model_id: str = req_msg.get("model") or policies.default_model_id(game_key=game_key)
-    await policies.prepare_runtime(model_id=model_id, game_key=game_key)
+    has_models = any(
+        p.player_type == "model" for p in game.get_match_mode(mode).players
+    )
+    model_id: str = (
+        req_msg.get("model") or policies.default_model_id(game_key=game_key)
+        if has_models
+        else "default"
+    )
+    players = resolve_players(game, mode, req_msg.get("players"), model_id)
+    for selected_model in dict.fromkeys(
+        p.model for p in players if p.model is not None
+    ):
+        await policies.prepare_runtime(model_id=selected_model, game_key=game_key)
 
     game_session: GameSession = await policies.run(
         GameSession,
@@ -98,6 +109,7 @@ async def _create_game_session(
             mode=mode,
             profile=req_msg.get("profile", "auto"),
             model=model_id,
+            players=players,
         ),
         policies,
     )

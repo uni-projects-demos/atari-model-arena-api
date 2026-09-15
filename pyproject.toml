@@ -1,35 +1,44 @@
 [project]
 name = "atari-model-arena-api"
 version = "1.0.0"
-description = "Backend API for testing trained models against classic Atari game engines and, when supported, users."
+description = "Backend API for testing trained models against Atari game engines and, when supported, users and other models. Also supports user vs Atari"
+authors = [
+  { name = "uni-projects-demos" },
+]
+license = "GPL-3.0-only"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
   "ale-py>=0.12.1",
-  "autorom[accept-rom-license]",
+  "autorom[accept-rom-license]>=0.6.1",
   "fastapi>=0.141.1",
-  "huggingface-hub>=1.28.0",
+  "huggingface-hub>=1.31.0",
   "multi-agent-ale-py>=0.1.12",
-  "numpy>=2.5.2",
+  "numpy>=2.5.3",
   "opencv-python-headless>=4.10,<5",
-  "pettingzoo[atari]",
+  "pettingzoo[atari]>=1.27.0",
   "python-multipart>=0.0.32",
   "stable-baselines3>=2.9.0",
-  "torch>=2.13.0",
-  "uvicorn[standard]>=0.52.4",
+  "torch>=2.14.0",
+  "uvicorn[standard]>=0.53.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/uni-projects-demos/atari-model-arena-api"
+Repository = "https://github.com/uni-projects-demos/atari-model-arena-api.git"
+Issues = "https://github.com/uni-projects-demos/atari-model-arena-api/issues"
 
 [project.optional-dependencies]
 dev = [
   "black>=26.5.1",
   "mypy>=2.3.1",
   "pytest>=9.1.1",
-  "ruff>=0.16.4",
+  "ruff>=0.16.7",
 ]
 
 [project.scripts]
 install-roms = "utils.setup_roms:main"
-code-check = "utils.code_check:main"
+code-verify = "utils.code_verify:main"
 
 [tool.mypy]
 check_untyped_defs = true

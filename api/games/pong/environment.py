@@ -20,11 +20,25 @@ from .config import PONG_PROFILES
 
 
 class UserVsModelPong:
-    def __init__(self, profile_key: str, seed: int | None = None) -> None:
+    def __init__(
+        self,
+        profile_key: str,
+        seed: int | None = None,
+        *,
+        starting_side: str | None = None,
+    ) -> None:
+        if starting_side not in {None, "left", "right"}:
+            raise ValueError(f"Invalid Pong starting side: {starting_side}.")
+        self._starting_side: str | None = starting_side
+        self._is_open_pending: bool = starting_side == "right"
         self._ale: Any = ALEInterface()
         ALEInterface.setLoggerMode(mode="error")
         self._profile, self.rng = _configure_ale(
-            ale=self._ale, profile_key=profile_key, seed=seed, is_bytes=True
+            ale=self._ale,
+            profile_key=profile_key,
+            seed=seed,
+            is_bytes=True,
+            frame_skip=1,
         )
 
         self._ale.setMode(mode=4)
@@ -45,6 +59,16 @@ class UserVsModelPong:
     def _screen(self) -> np.ndarray:
         return np.asarray(a=self._ale.getScreenRGB(), dtype=np.uint8)
 
+    def _set_opening_direction(self) -> None:
+        if not self._is_open_pending:
+            return
+        velocity: int = int(self._ale.getRAM()[58])
+        if velocity == 0:
+            return
+        if velocity < 128:
+            self._ale.setRAM(58, (-velocity) & 0xFF)
+        self._is_open_pending = False
+
     @property
     def agents(self) -> list[str]:
         return self._agents
@@ -56,7 +80,7 @@ class UserVsModelPong:
         dict[str, bool],
         dict[str, Any],
     ]:
-        minimal: np.ndarray = np.asarray(
+        minimal: np.ndarray[tuple, np.dtype] = np.asarray(
             a=[
                 int(actions.get("first_0", 0)),
                 int(actions.get("second_0", 0)),
@@ -73,6 +97,8 @@ class UserVsModelPong:
                 a=self._ale.act(ale_actions),
                 dtype=np.float64,
             ).reshape(-1)
+
+            self._set_opening_direction()
 
             if step_rewards.size >= 2:
                 ttl_rewards += step_rewards[:2]
@@ -102,7 +128,8 @@ class UserVsModelPong:
 
     def reset(self) -> tuple[dict[str, np.ndarray], dict[str, dict[Any, Any]]]:
         self._ale.reset_game()
-        self._agents = list(self._possible_agents)
+        self._is_open_pending = self._starting_side == "right"
+        self._agents = list[str](self._possible_agents)
         self._frame = 0
         self._last_frame = self._screen()
         return {agent: self._last_frame.copy() for agent in self._agents}, {
@@ -179,8 +206,10 @@ def _configure_ale(
     )
 
 
-def user_vs_model_pong(profile_key: str) -> UserVsModelPong:
-    return UserVsModelPong(profile_key=profile_key)
+def user_vs_model_pong(
+    profile_key: str, *, starting_side: str | None = None
+) -> UserVsModelPong:
+    return UserVsModelPong(profile_key=profile_key, starting_side=starting_side)
 
 
 def game_vs_model_pong(profile_key: str) -> GameVsModelPong:

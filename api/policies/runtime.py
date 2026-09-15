@@ -86,7 +86,9 @@ class ModelRuntime(RuntimePolicy):
             )
             return int(self._model(tensor).argmax(dim=1).item())
         elif self._backend == "sb3":
-            if tuple(getattr(self._model.observation_space, "shape", (84, 84, 4))) == (
+            if tuple[int](
+                getattr(self._model.observation_space, "shape", (84, 84, 4))
+            ) == (
                 4,
                 84,
                 84,

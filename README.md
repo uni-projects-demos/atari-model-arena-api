@@ -1,6 +1,6 @@
 # Atari Model Arena API
 
-Backend API for testing trained models against classic Atari game engines and, when supported, users.
+Backend API for testing trained models against Atari game engines and, when supported, users and other models.
 
 ## Requirements
 
@@ -23,5 +23,5 @@ uvicorn api.main:app --host 127.0.0.1 --port 8000
 Before making a Pull Request, ensure it addresses an Issue, and verify the branch passes:
 
 ```bash
-code-check
+code-verify
 ```

@@ -14,6 +14,7 @@ def main() -> None:
             executable,
             "-m",
             "black",
+            "--fast",
             "api/.",
             "utils/.",
         ]
@@ -42,4 +43,4 @@ def main() -> None:
         ]
     )
 
-    print("\nAll checks pass.")
+    print("\nAll code verifications pass.")

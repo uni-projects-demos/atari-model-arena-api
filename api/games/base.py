@@ -8,10 +8,21 @@ import numpy as np
 
 from ..models import ModelSpec, RuntimePolicy
 
-USER_MODE_KEY = "user"
-GAME_MODE_KEY = "game"
-DEFAULT_MODE_KEY = GAME_MODE_KEY
-STANDARD_MODE_KEYS = frozenset({USER_MODE_KEY, GAME_MODE_KEY})
+USER_MODE_KEY: str = "user"
+GAME_MODE_KEY: str = "game"
+DEFAULT_MODE_KEY: str = GAME_MODE_KEY
+MODEL_MODE_KEY: str = "model"
+USER_GAME_MODE_KEY: str = "user-game"
+USER_MODEL_MODE_KEY: str = "user-model"
+STANDARD_MODE_KEYS: frozenset[str] = frozenset(
+    {
+        USER_MODE_KEY,
+        GAME_MODE_KEY,
+        MODEL_MODE_KEY,
+        USER_GAME_MODE_KEY,
+        USER_MODEL_MODE_KEY,
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -29,12 +40,21 @@ class UserControls:
 
 
 @dataclass(frozen=True)
+class PlayerSlot:
+    key: str
+    player_type: str
+    is_mirror: bool = False
+    side: str | None = None
+
+
+@dataclass(frozen=True)
 class MatchMode:
     key: str
     left_label: str
     right_label: str
     is_user: bool = False
     user_controls: UserControls | None = None
+    players: tuple[PlayerSlot, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -44,6 +64,7 @@ class MatchSnapshot:
     right_score: float | int
     model_action: int
     is_done: bool = False
+    player_actions: dict[str, int] | None = None
 
 
 class MatchController(ABC):
@@ -108,6 +129,7 @@ class GamePlugin(ABC):
         mode_key: str,
         profile_key: str,
         policy: RuntimePolicy,
+        opponent_policy: RuntimePolicy | None = None,
     ) -> MatchController: ...
 
     def get_profile(self, key: str) -> CompatProfile:

@@ -23,9 +23,23 @@ class UserVsModelPongController(MatchController):
         "down_fire": 5,
     }
 
-    def __init__(self, profile_key: str, policy: RuntimePolicy) -> None:
+    def __init__(
+        self,
+        profile_key: str,
+        policy: RuntimePolicy,
+        opponent_policy: RuntimePolicy | None = None,
+        starting_side: str = "left",
+        is_model_left: bool = True,
+    ) -> None:
         super().__init__(policy=policy)
-        self._env: UserVsModelPong = user_vs_model_pong(profile_key=profile_key)
+        self._opponent_policy: RuntimePolicy | None = opponent_policy
+        self._is_model_left: bool = is_model_left
+        self._opponent_serve_actions: deque[int] = deque()
+        self._player_actions: dict[str, int] = {}
+        self._env: UserVsModelPong = user_vs_model_pong(
+            profile_key=profile_key,
+            starting_side=starting_side if opponent_policy is not None else None,
+        )
         self._obs: dict[str, np.ndarray] = {}
         self._user_action: int = 0
         self._serve_actions: deque[int] = deque()
@@ -33,6 +47,9 @@ class UserVsModelPongController(MatchController):
     def _queue_serve(self) -> None:
         self._serve_actions.clear()
         self._serve_actions.extend((1, 2))
+        self._opponent_serve_actions.clear()
+        if self._opponent_policy is not None:
+            self._opponent_serve_actions.extend((1, 2))
 
     def _frame(self) -> np.ndarray:
         if self._obs:
@@ -43,6 +60,16 @@ class UserVsModelPongController(MatchController):
                 dtype=np.uint8,
             )
         return np.zeros(shape=(210, 160, 3), dtype=np.uint8)
+
+    def _snapshot(self, is_done: bool = False) -> MatchSnapshot:
+        return MatchSnapshot(
+            self._frame(),
+            self._left_score,
+            self._right_score,
+            self._model_action,
+            is_done,
+            dict[str, int](self._player_actions),
+        )
 
     def set_human(self, direction: str) -> None:
         self._user_action = self.USER_ACTIONS.get(direction, 0)
@@ -57,7 +84,18 @@ class UserVsModelPongController(MatchController):
         actions: dict[str, int] = {}
         for agent in self._env.agents:
             if agent == "first_0":
-                actions[agent] = int(self._user_action)
+                if self._opponent_policy is None:
+                    actions[agent] = int(self._user_action)
+                else:
+                    actions[agent] = (
+                        self._opponent_serve_actions.popleft()
+                        if self._opponent_serve_actions
+                        else int(
+                            self._opponent_policy.predict(
+                                rgb=np.asarray(a=self._obs[agent], dtype=np.uint8)
+                            )
+                        )
+                    )
             elif agent == "second_0":
                 action: int = (
                     self._serve_actions.popleft()
@@ -73,19 +111,28 @@ class UserVsModelPongController(MatchController):
             else:
                 actions[agent] = 0
 
+        self._player_actions = actions
         self._obs, rewards, is_terminated_dict, is_truncated_dict, _ = self._env.step(
             actions=actions
         )
         user_reward = float(rewards.get("first_0", 0.0))
         model_reward = float(rewards.get("second_0", 0.0))
         if model_reward > 0:
-            self._left_score += model_reward
+            if self._is_model_left:
+                self._left_score += model_reward
+            else:
+                self._right_score += model_reward
         if user_reward > 0:
-            self._right_score += user_reward
+            if self._is_model_left:
+                self._right_score += user_reward
+            else:
+                self._left_score += user_reward
         if user_reward != 0.0 or model_reward != 0.0:
             self._queue_serve()
 
-        is_done_agents_set: set = set(is_terminated_dict) | set(is_truncated_dict)
+        is_done_agents_set: set = set[str](is_terminated_dict) | set[str](
+            is_truncated_dict
+        )
         is_done: bool = bool(is_done_agents_set) and all(
             is_terminated_dict.get(agent, False) or is_truncated_dict.get(agent, False)
             for agent in is_done_agents_set
@@ -94,6 +141,7 @@ class UserVsModelPongController(MatchController):
 
     def reset(self) -> MatchSnapshot:
         self._reset_scores()
+        self._player_actions = {}
         self._user_action = 0
         self._serve_actions.clear()
         self._obs, _ = self._env.reset()
